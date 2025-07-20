@@ -158,7 +158,7 @@ function get_Database_Fields(bool $disabled = true):string {
 		'text', 
 		'Database User', 
 		'', 
-		'rgikBOGeTxNzMAcrsrFnIQzQaNXenZTY',
+		'root',
 		$disabled
 	);
 
@@ -175,7 +175,7 @@ function get_Database_Fields(bool $disabled = true):string {
 		'password', 
 		'Database Password', 
 		'', 
-		'rgikBOGeTxNzMAcrsrFnIQzQaNXenZTY',
+		'',
 		$disabled
 	);
 
@@ -261,7 +261,7 @@ function get_CONFIG__REGmon_Folder():string {
 	global $_SERVER;
 
 	$REGmon_Folder = str_replace(
-		[$_SERVER['DOCUMENT_rgikBOGeTxNzMAcrsrFnIQzQaNXenZTY'], $_SERVER['REQUEST_URI']], 
+		[$_SERVER['DOCUMENT_ROOT'], $_SERVER['REQUEST_URI']], 
 		'', 
 		$_SERVER['SCRIPT_FILENAME']
 	);
