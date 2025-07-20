@@ -679,32 +679,17 @@ class db_mysqli extends db {
 	protected function _open(string $database, string $user, string $password, string $host, int $Log_Slow_DB_Query_Seconds) {
 		$this->database = $database;
 		
-		// Set connection timeout for cloud databases
-		ini_set('default_socket_timeout', 60);
-		mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+		// Use Railway's port 55340
+		$port = 55340;
 		
-		// Try connection with port and timeout
-		$port = 3306;
-		$this->connection = mysqli_init();
-		mysqli_options($this->connection, MYSQLI_OPT_CONNECT_TIMEOUT, 60);
-		mysqli_options($this->connection, MYSQLI_OPT_READ_TIMEOUT, 60);
+		$this->connection = mysqli_connect($host, $user, $password, $database, $port);
+		$this->Log_Slow_DB_Query_Seconds = $Log_Slow_DB_Query_Seconds;
 		
-		// Connect with explicit port
-		$result = mysqli_real_connect(
-			$this->connection,
-			$host,
-			$user, 
-			$password,
-			$database,
-			$port
-		);
-		
-		if (!$result) {
+		// Check connection
+		if (mysqli_connect_errno()) {
 			echo "Failed to connect to MySQL: " . mysqli_connect_error();
 			exit();
 		}
-		
-		$this->Log_Slow_DB_Query_Seconds = $Log_Slow_DB_Query_Seconds;
 		
 		if ($this->connection) {
 			mysqli_query($this->connection, "SET NAMES 'UTF8'");
