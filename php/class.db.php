@@ -678,13 +678,34 @@ class db_mysqli extends db {
 	 */
 	protected function _open(string $database, string $user, string $password, string $host, int $Log_Slow_DB_Query_Seconds) {
 		$this->database = $database;
-		$this->connection = mysqli_connect($host, $user, $password, $database);
-		$this->Log_Slow_DB_Query_Seconds = $Log_Slow_DB_Query_Seconds;
-		// Check connection
-		if (mysqli_connect_errno()) {
+		
+		// Set connection timeout for cloud databases
+		ini_set('default_socket_timeout', 60);
+		mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+		
+		// Try connection with port and timeout
+		$port = 3306;
+		$this->connection = mysqli_init();
+		mysqli_options($this->connection, MYSQLI_OPT_CONNECT_TIMEOUT, 60);
+		mysqli_options($this->connection, MYSQLI_OPT_READ_TIMEOUT, 60);
+		
+		// Connect with explicit port
+		$result = mysqli_real_connect(
+			$this->connection,
+			$host,
+			$user, 
+			$password,
+			$database,
+			$port
+		);
+		
+		if (!$result) {
 			echo "Failed to connect to MySQL: " . mysqli_connect_error();
 			exit();
 		}
+		
+		$this->Log_Slow_DB_Query_Seconds = $Log_Slow_DB_Query_Seconds;
+		
 		if ($this->connection) {
 			mysqli_query($this->connection, "SET NAMES 'UTF8'");
 			return $this->connection;
