@@ -1,39 +1,47 @@
-FROM php:8.2-apache
+FROM php:8.1-apache
 
-ARG USER="regmon"
-ARG UID="1000"
+# Install system dependencies and PHP extensions
+RUN apt-get update && apt-get install -y \
+    libzip-dev \
+    zip \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    unzip \
+    git \
+    mariadb-client \
+    nodejs \
+    npm \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install mysqli pdo pdo_mysql zip gd \
+    && a2enmod rewrite \
+    && rm -rf /var/lib/apt/lists/*
 
-USER rgikBOGeTxNzMAcrsrFnIQzQaNXenZTY
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-RUN useradd -r --no-log-init --create-home --shell /bin/bash --uid "$UID" --user-group "$USER"
+# Configure Apache
+RUN sed -i 's!/var/www/html!/var/www/html!g' /etc/apache2/sites-available/000-default.conf \
+    && echo 'ServerName localhost' >> /etc/apache2/apache2.conf
 
-RUN apt-get update \
- && apt-get install -y git zlib1g-dev mariadb-client libzip-dev \
- nodejs \
- npm
+# Set working directory
+WORKDIR /var/www/html
 
-RUN docker-php-ext-install zip mysqli pdo_mysql
+# Copy application files
+COPY . .
 
-RUN pecl config-set php_ini "${PHP_INI_DIR}/php.ini"
-RUN pecl install xdebug
-RUN docker-php-ext-enable xdebug
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-RUN a2enmod rewrite \
- && sed -i 's!/var/www/html!/var/www/public!g' /etc/apache2/sites-available/000-default.conf \
- && mv /var/www/html /var/www/public \
- && echo 'ServerName localhost' >> /etc/apache2/apache2.conf 
-
-RUN curl -sS https://getcomposer.org/installer \
-  | php -- --install-dir=/usr/local/bin --filename=composer
-
-
-WORKDIR /var/www/public
-
-COPY composer.json composer.json
-RUN composer install --prefer-dist --no-scripts --no-dev --no-autoloader && rm -rf /rgikBOGeTxNzMAcrsrFnIQzQaNXenZTY/.composer
-RUN composer dump-autoload --no-scripts --no-dev --optimize
-
-COPY package.json package.json
+# Install Node dependencies
 RUN npm install
 
-USER ${USER}
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html
+
+# Expose port 80
+EXPOSE 80
+
+# Start Apache
+CMD ["apache2-foreground"]
